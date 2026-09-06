@@ -19,9 +19,9 @@ class PublisherSerializer(serializers.ModelSerializer):
         
 class BookSerializer(serializers.ModelSerializer):
 
-    authors = AuthorSerializer(many=True, read_only=True)
-    category = CategorySerializer(read_only=True)
-    publisher = PublisherSerializer(read_only=True)
+    authors_details = AuthorSerializer(source="authors", many=True, read_only=True)
+    category_name = serializers.CharField(source= "category.name",read_only=True)
+    publisher_name = serializers.CharField(source="publisher.name",read_only=True)
 
     class Meta:
         model = Book
@@ -30,12 +30,15 @@ class BookSerializer(serializers.ModelSerializer):
             "title",
             "isbn",
             "description",
-            "publication_date",
+            "published_date",
             "total_copies",
             "available_copies",
             "category",
+            "category_name",
             "authors",
+            "authors_details",
             "publisher",
+            "publisher_name",
             "created_at",
             "updated_at",
         ]
