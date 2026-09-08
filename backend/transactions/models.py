@@ -37,3 +37,13 @@ class BookQueue(models.Model):
 
     def __str__(self):
         return f"{self.user}- {self.book}- {self.status}"
+
+
+class Fine(models.Model):
+    borrow = models.OneToOneField(Borrow, on_delete=models.CASCADE, related_name="fine")
+    amount = models.DecimalField(max_digits=10, decimal_places=3, default=0)
+    is_paid = models.BooleanField(default = False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Fine for {self.borrow} - Rs. {self.amount}"
