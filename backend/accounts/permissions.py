@@ -1,11 +1,30 @@
 from rest_framework.permissions import BasePermission
 
+
 class IsLibrarian(BasePermission):
-    def has_permission(self, request,view):
-        return (request.user and request.user.is_authenticated and request.user.role== "LIBRARIAN")
+
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == "LIBRARIAN"
+        )
 
 
 class IsStudent(BasePermission):
+
     def has_permission(self, request, view):
-        return (request.user and request.user.is_authenticated and request.user.role == "STUDENT")
-    
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == "STUDENT"
+        )
+
+class IsStudentOrLibrarian(BasePermission):
+
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.role in ["STUDENT", "LIBRARIAN"]
+        )

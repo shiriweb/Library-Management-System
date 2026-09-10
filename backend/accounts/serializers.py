@@ -23,3 +23,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             last_name= validated_data.get('last_name',"") 
         )
         return user
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(
+        write_only=True
+    )

@@ -1,11 +1,14 @@
 from rest_framework import serializers
+
 from .models import Borrow, BookQueue, Fine
+
 
 class BorrowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Borrow
-        fields= [
+
+        fields = [
             'id',
             'user',
             'book',
@@ -27,29 +30,60 @@ class BorrowSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         book = data['book']
 
-        existing_borrow = Borrow.objects.filter(user = user, book = book, status= "borrowed").exists()
-        if existing_borrow :
-            raise serializers.ValidationError("You already have this book borrowed.")
+        # Check if the student already has this book borrowed.
+        existing_borrow = Borrow.objects.filter(
+            user=user,
+            book=book,
+            status='borrowed'
+        ).exists()
 
+        if existing_borrow:
+            raise serializers.ValidationError(
+                "You already have this book borrowed."
+            )
+
+        # Check if the book is available.
         if book.available_copies <= 0:
             raise serializers.ValidationError(
-                "This book is currently unavailable.Please join the queue."
-
+                "This book is currently unavailable. Please join the queue."
             )
+
         return data
 
-    def create(self,validated_data):
+    def create(self, validated_data):
         user = self.context['request'].user
         book = validated_data['book']
+
+        # Decrease available copies.
         book.available_copies -= 1
         book.save()
-        borrow = Borrow.objects.create(user = user,**validated_data)
+
+        # Create the borrow record.
+        borrow = Borrow.objects.create(
+            user=user,
+            **validated_data
+        )
+
+        # If the student was notified about this book,
+        # mark their queue entry as fulfilled.
+        queue_entry = BookQueue.objects.filter(
+            user=user,
+            book=book,
+            status='notified'
+        ).first()
+
+        if queue_entry:
+            queue_entry.status = 'fulfilled'
+            queue_entry.save()
+
         return borrow
 
-    
+
 class BookQueueSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = BookQueue
+
         fields = [
             'id',
             'user',
@@ -65,28 +99,48 @@ class BookQueueSerializer(serializers.ModelSerializer):
             'status',
         ]
 
-    def validate(self,data):
-        user= self.context['request'].user
+    def validate(self, data):
+        user = self.context['request'].user
         book = data['book']
 
+        # A student should join the queue only
+        # when the book is unavailable.
         if book.available_copies > 0:
-            raise serializers.ValidationError("This book is currently availabe. You can borrow it directly.")
+            raise serializers.ValidationError(
+                "This book is currently available. You can borrow it directly."
+            )
 
-        existing_queue = BookQueue.objects.filter(user = user, book = book, status='waiting').exists()
+        # Check if the student already has an active
+        # queue entry for this book.
+        existing_queue = BookQueue.objects.filter(
+            user=user,
+            book=book,
+            status__in=['waiting', 'notified']
+        ).exists()
 
         if existing_queue:
-            raise serializers.ValidationError("You are already in the waiting queue for this book.")
+            raise serializers.ValidationError(
+                "You are already in the queue for this book."
+            )
+
         return data
 
-    def create(self, validate_data):
+    def create(self, validated_data):
         user = self.context['request'].user
-        queue_entry = BookQueue.objects.create(user= user, **validate_data)
+
+        queue_entry = BookQueue.objects.create(
+            user=user,
+            **validated_data
+        )
+
         return queue_entry
 
 
 class FineSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Fine
+
         fields = [
             'id',
             'borrow',
@@ -95,8 +149,8 @@ class FineSerializer(serializers.ModelSerializer):
             'created_at',
         ]
 
-        read_only_fields= [
+        read_only_fields = [
             'id',
             'amount',
-            'create_at',
+            'created_at',
         ]
