@@ -37,9 +37,7 @@ function Login() {
       console.log("Login response:", response.data);
 
       localStorage.setItem("access_token", response.data.access);
-
       localStorage.setItem("refresh_token", response.data.refresh);
-
       localStorage.setItem("user", JSON.stringify(response.data.user));
 
       const user = response.data.user;
@@ -72,12 +70,17 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-10">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Smart Library</h1>
 
-          <p className="text-gray-500 mt-2">Login to your account</p>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">
+            Smart Library
+          </h1>
+
+          <p className="text-gray-500 mt-2">
+            Login to your account
+          </p>
         </div>
 
         {error && (
@@ -87,6 +90,7 @@ function Login() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Username
@@ -126,6 +130,7 @@ function Login() {
           >
             {loading ? "Logging in..." : "Login"}
           </button>
+
         </form>
 
         <p className="text-center text-gray-600 mt-6">
@@ -137,9 +142,11 @@ function Login() {
             Register
           </button>
         </p>
+
       </div>
     </div>
   );
 }
 
 export default Login;
+
