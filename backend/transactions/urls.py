@@ -5,11 +5,11 @@ from .views import (
     BookQueueListCreateView,
     BorrowReturnView,
     BookQueueDeleteView,
+    FineListView,
     FinePaymentView,
     StudentDashboardView,
     LibrarianDashboardView,
 )
-
 
 urlpatterns = [
     path(
@@ -36,6 +36,12 @@ urlpatterns = [
         name='queue_delete'
     ),
 
+    path(
+        'fines/',
+        FineListView.as_view(),
+        name='fine_list'
+    ),
+    
     path(
         'fines/<int:pk>/pay/',
         FinePaymentView.as_view(),

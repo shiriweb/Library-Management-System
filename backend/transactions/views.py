@@ -163,6 +163,15 @@ class BookQueueDeleteView(generics.DestroyAPIView):
             user=self.request.user
         )
 
+class FineListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        fines = Fine.objects.filter(borrow__user=request.user)
+
+        serializer = FineSerializer(fines, many=True)
+
+        return Response(serializer.data)
 
 class FinePaymentView(APIView):
     permission_classes = [IsAuthenticated]
