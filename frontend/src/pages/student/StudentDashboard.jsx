@@ -1,107 +1,159 @@
-import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import AppLayout from "../../components/AppLayout";
+import api from "../../services/api";
+
+function StatCard({ label, value, note }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
+      {note && <p className="mt-1 text-xs text-slate-500">{note}</p>}
+    </div>
+  );
+}
 
 function StudentDashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const [dashboard, setDashboard] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState(null);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+  const loadDashboard = useCallback(async () => {
+    try {
+      setError("");
+      const response = await api.get("/transactions/student-dashboard/");
+      setDashboard(response.data);
+    } catch (requestError) {
+      setError(requestError.response?.data?.detail || "Unable to load dashboard.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const handleViewBooks = () => {
-    navigate("/student/books");
+  useEffect(() => {
+    loadDashboard();
+    const refreshTimer = window.setInterval(loadDashboard, 15000);
+    return () => window.clearInterval(refreshTimer);
+  }, [loadDashboard]);
+
+  const notifiedQueue = dashboard?.queue?.filter((entry) => entry.status === "notified") || [];
+
+  const leaveQueue = async (queueId) => {
+    try {
+      setBusyId(queueId);
+      setError("");
+      await api.delete(`/transactions/queue/${queueId}/`);
+      await loadDashboard();
+    } catch (requestError) {
+      setError(requestError.response?.data?.detail || "Unable to leave queue.");
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Smart Library</h1>
-
-            <p className="text-sm text-gray-500">Student Portal</p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <span className="text-gray-700">{user?.username}</span>
-
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-            >
-              Logout
-            </button>
-          </div>
+    <AppLayout
+      title="Student Dashboard"
+      subtitle="Your current borrowing, queue and fine information from the library backend."
+    >
+      {error && (
+        <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
         </div>
-      </nav>
+      )}
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-800">
-            Welcome, {user?.first_name || user?.username}!
-          </h2>
-
-          <p className="text-gray-600 mt-2">
-            Manage your library activities from here.
-          </p>
+      {notifiedQueue.length > 0 && (
+        <div className="mb-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+          <p className="font-semibold">Book available for you</p>
+          {notifiedQueue.map((entry) => (
+            <p key={entry.queue_id} className="mt-1">
+              {entry.book_title} has an available copy. Open Books and borrow it.
+            </p>
+          ))}
         </div>
+      )}
 
-        {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Browse Books
-            </h3>
-
-            <p className="text-gray-500 mt-2">
-              Explore books available in the library.
-            </p>
-            <button
-              onClick={handleViewBooks}
-              className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              View Books
-            </button>
+      {loading ? (
+        <p className="text-slate-600">Loading dashboard...</p>
+      ) : dashboard ? (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Total Borrowed" value={dashboard.total_borrowed} />
+            <StatCard label="Currently Borrowed" value={dashboard.current_borrows.length} />
+            <StatCard label="Overdue Books" value={dashboard.overdue_borrows.length} />
+            <StatCard
+              label="Unpaid Fine"
+              value={`Rs. ${dashboard.unpaid_fines}`}
+              note={`${dashboard.waiting_queue} waiting queue item(s)`}
+            />
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-800">
-              My Borrowed Books
-            </h3>
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-slate-900">Current Books</h2>
+              {dashboard.current_borrows.length === 0 ? (
+                <p className="mt-3 text-sm text-slate-500">No books currently borrowed.</p>
+              ) : (
+                <div className="mt-3 space-y-3">
+                  {dashboard.current_borrows.map((borrow) => (
+                    <div key={borrow.borrow_id} className="rounded-lg bg-slate-50 p-3">
+                      <p className="font-semibold text-slate-800">{borrow.book_title}</p>
+                      <p className="mt-1 text-sm text-slate-500">Due: {borrow.due_date}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
 
-            <p className="text-gray-500 mt-2">
-              View the books you currently have borrowed.
-            </p>
-
-            <button
-              onClick={() => navigate("/student/my-books")}
-              className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              My Books
-            </button>
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-slate-900">My Queue</h2>
+              {dashboard.queue.length === 0 ? (
+                <p className="mt-3 text-sm text-slate-500">You are not in any book queue.</p>
+              ) : (
+                <div className="mt-3 space-y-3">
+                  {dashboard.queue.map((entry) => (
+                    <div
+                      key={entry.queue_id}
+                      className="flex flex-col gap-3 rounded-lg bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="font-semibold text-slate-800">{entry.book_title}</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Status: <span className="font-medium capitalize">{entry.status}</span>
+                        </p>
+                      </div>
+                      {["waiting", "notified"].includes(entry.status) && (
+                        <button
+                          onClick={() => leaveQueue(entry.queue_id)}
+                          disabled={busyId === entry.queue_id}
+                          className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {busyId === entry.queue_id ? "Removing..." : "Leave Queue"}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-800">My Fines</h3>
-
-            <p className="text-gray-500 mt-2">
-              Check your outstanding library fines.
-            </p>
-
-            <button
-              onClick={() => navigate("/student/fines")}
-              className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              View Fines
-            </button>
-          </div>
-        </div>
-      </main>
-    </div>
+          {dashboard.overdue_borrows.length > 0 && (
+            <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
+              <h2 className="font-semibold text-amber-900">Overdue Books</h2>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                {dashboard.overdue_borrows.map((borrow) => (
+                  <div key={borrow.borrow_id} className="rounded-lg bg-white p-3 text-sm">
+                    <p className="font-semibold text-slate-800">{borrow.book_title}</p>
+                    <p className="mt-1 text-amber-700">Due date: {borrow.due_date}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      ) : null}
+    </AppLayout>
   );
 }
 

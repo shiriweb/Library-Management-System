@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AppLayout from "../../components/AppLayout";
+import BookCover from "../../components/BookCover";
 import api from "../../services/api";
 
 function ManageBooks() {
@@ -10,95 +12,128 @@ function ManageBooks() {
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
 
-  const fetchBooks = async () => {
+  const fetchBooks = useCallback(async () => {
     try {
-      const response = await api.get("/books/");
-      setBooks(response.data);
-    } catch (error) {
-      console.error("BOOKS ERROR:", error);
+      setLoading(true);
+      setError("");
 
-      if (error.response) {
-        setError(error.response.data.detail || "Unable to load books.");
-      } else {
-        setError("Unable to connect to the server.");
-      }
+      const response = await api.get("/books/");
+
+      console.log("Books from API:", response.data);
+
+      setBooks(response.data);
+    } catch (requestError) {
+      console.error("Unable to load books:", requestError);
+
+      setError(
+        requestError.response?.data?.detail ||
+          "Unable to load books."
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchBooks();
-  }, []);
+  }, [fetchBooks]);
 
-  const handleDelete = async (bookId) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this book?",
-    );
-
-    if (!confirmDelete) {
+  const handleDelete = async (book) => {
+    if (!window.confirm(`Delete "${book.title}"?`)) {
       return;
     }
 
     try {
-      setDeletingId(bookId);
+      setDeletingId(book.id);
       setError("");
 
-      await api.delete(`/books/${bookId}/`);
+      await api.delete(`/books/${book.id}/`);
 
-      setBooks((currentBooks) =>
-        currentBooks.filter((book) => book.id !== bookId),
+      setBooks((current) =>
+        current.filter((item) => item.id !== book.id)
       );
-    } catch (error) {
-      console.error("DELETE BOOK ERROR:", error);
-
-      if (error.response) {
-        setError(error.response.data.detail || "Unable to delete book.");
-      } else {
-        setError("Unable to connect to the server.");
-      }
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.detail ||
+          "Unable to delete this book. It may be protected by existing library records."
+      );
     } finally {
       setDeletingId(null);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <p className="text-gray-600">Loading books...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800">Manage Books</h1>
-
-        <p className="text-gray-600 mt-2">View and manage library books.</p>
-
+    <AppLayout
+      title="Manage Books"
+      subtitle="Manage your library books, images, and stock."
+      actions={
         <button
           onClick={() => navigate("/librarian/books/add")}
-          className="mt-5 bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
         >
           Add Book
         </button>
+      }
+    >
+      {/* Information */}
+      <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+        <p className="font-semibold">
+          Book availability and queue management
+        </p>
 
-        {error && <p className="mt-6 text-red-600">{error}</p>}
+        <p className="mt-1">
+          Use the Return action on the librarian Dashboard when a
+          borrowed book is returned. Use Edit / Stock for catalog
+          corrections or adding physical copies.
+        </p>
+      </div>
 
-        <div className="bg-white rounded-xl shadow-sm mt-8 overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="py-4 px-4">Title</th>
+      {/* Error */}
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
-                <th className="py-4 px-4">ISBN</th>
+      {/* Loading */}
+      {loading ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+          <p className="text-slate-600">
+            Loading books...
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+          <table className="w-full min-w-[1000px] text-left text-sm">
+            <thead className="bg-slate-50 text-slate-600">
+              <tr>
+                <th className="px-5 py-4">
+                  Cover
+                </th>
 
-                <th className="py-4 px-4">Total Copies</th>
+                <th className="px-5 py-4">
+                  Title
+                </th>
 
-                <th className="py-4 px-4">Available Copies</th>
+                <th className="px-5 py-4">
+                  ISBN
+                </th>
 
-                <th className="py-4 px-4">Actions</th>
+                <th className="px-5 py-4">
+                  Category
+                </th>
+
+                <th className="px-5 py-4">
+                  Copies
+                </th>
+
+                <th className="px-5 py-4">
+                  Available
+                </th>
+
+                <th className="px-5 py-4">
+                  Actions
+                </th>
               </tr>
             </thead>
 
@@ -106,40 +141,101 @@ function ManageBooks() {
               {books.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="5"
-                    className="py-6 px-4 text-center text-gray-600"
+                    colSpan="7"
+                    className="px-5 py-10 text-center text-slate-500"
                   >
                     No books found.
                   </td>
                 </tr>
               ) : (
                 books.map((book) => (
-                  <tr key={book.id} className="border-b">
-                    <td className="py-4 px-4">{book.title}</td>
+                  <tr
+                    key={book.id}
+                    className="border-t border-slate-100"
+                  >
+                    {/* BOOK IMAGE */}
+                    <td className="px-5 py-4">
+                      <div className="flex h-24 w-16 items-center justify-center overflow-hidden rounded-lg bg-slate-100">
+                        {book.image ? (
+                          <img
+                            src={
+                              book.image.startsWith("http")
+                                ? book.image
+                                : `http://127.0.0.1:8000${book.image}`
+                            }
+                            alt={book.title}
+                            className="h-full w-full object-cover"
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <BookCover
+                            isbn={book.isbn}
+                            title={book.title}
+                            className="h-24 w-16"
+                          />
+                        )}
+                      </div>
+                    </td>
 
-                    <td className="py-4 px-4">{book.isbn}</td>
+                    {/* TITLE */}
+                    <td className="px-5 py-4">
+                      <div className="font-semibold text-slate-800">
+                        {book.title}
+                      </div>
+                    </td>
 
-                    <td className="py-4 px-4">{book.total_copies}</td>
+                    {/* ISBN */}
+                    <td className="px-5 py-4 text-slate-600">
+                      {book.isbn}
+                    </td>
 
-                    <td className="py-4 px-4">{book.available_copies}</td>
+                    {/* CATEGORY */}
+                    <td className="px-5 py-4 text-slate-600">
+                      {book.category_name || "—"}
+                    </td>
 
-                    <td className="py-4 px-4">
+                    {/* TOTAL COPIES */}
+                    <td className="px-5 py-4 text-slate-600">
+                      {book.total_copies}
+                    </td>
+
+                    {/* AVAILABLE */}
+                    <td className="px-5 py-4">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          Number(book.available_copies) > 0
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {book.available_copies}
+                      </span>
+                    </td>
+
+                    {/* ACTIONS */}
+                    <td className="px-5 py-4">
                       <div className="flex gap-2">
                         <button
                           onClick={() =>
-                            navigate(`/librarian/books/edit/${book.id}`)
+                            navigate(
+                              `/librarian/books/edit/${book.id}`
+                            )
                           }
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                          className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
                         >
-                          Edit
+                          Edit / Stock
                         </button>
 
                         <button
-                          onClick={() => handleDelete(book.id)}
+                          onClick={() => handleDelete(book)}
                           disabled={deletingId === book.id}
-                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:bg-gray-400"
+                          className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
                         >
-                          {deletingId === book.id ? "Deleting..." : "Delete"}
+                          {deletingId === book.id
+                            ? "Deleting..."
+                            : "Delete"}
                         </button>
                       </div>
                     </td>
@@ -149,8 +245,8 @@ function ManageBooks() {
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
+      )}
+    </AppLayout>
   );
 }
 

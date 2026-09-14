@@ -30,6 +30,7 @@ class Book(models.Model):
     total_copies = models.PositiveIntegerField(default = 1)
     available_copies = models.PositiveIntegerField(default = 1)
 
+    image = models.ImageField(upload_to="books/", null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="books")
     authors = models.ManyToManyField(Author, related_name= "books")
     publisher = models.ForeignKey(Publisher,on_delete=models.SET_NULL,null=True, blank= True, related_name= 'books')

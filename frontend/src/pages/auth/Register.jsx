@@ -1,174 +1,118 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
+
+function formatApiError(error) {
+  const data = error.response?.data;
+
+  if (!data) return "Unable to create account. Please try again.";
+  if (typeof data === "string") return data;
+
+  return Object.entries(data)
+    .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(" ") : messages}`)
+    .join(" | ");
+}
 
 function Register() {
   const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
     username: "",
     email: "",
+    first_name: "",
+    last_name: "",
     password: "",
     confirmPassword: "",
   });
-
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const handleChange = (event) => {
+    setFormData({ ...formData, [event.target.name]: event.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
-    setSuccess("");
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
+    setLoading(true);
+
     try {
       await api.post("/accounts/register/", {
         username: formData.username,
         email: formData.email,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
         password: formData.password,
       });
 
-      setSuccess("Account created successfully!");
-
-      setTimeout(() => {
-        navigate("/login");
-      }, 1000);
-
-    } catch (error) {
-      console.error(error);
-
-      if (error.response?.data) {
-        setError(JSON.stringify(error.response.data));
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      navigate("/login", { replace: true });
+    } catch (requestError) {
+      setError(formatApiError(requestError));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Create Account
-          </h1>
-
-          <p className="text-gray-500 mt-2">
-            Join Smart Library
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
+      <div className="w-full max-w-lg rounded-2xl bg-white p-7 shadow-md md:p-9">
+        <div className="mb-7 text-center">
+          <h1 className="text-2xl font-bold text-slate-900">Create Student Account</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Registration uses the current backend student account service.
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-5 text-sm">
+          <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        {success && (
-          <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-5 text-sm">
-            {success}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Username
-            </label>
-
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="Enter username"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
-
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter email"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Confirm Password
-            </label>
-
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+          {[
+            ["username", "Username", "text"],
+            ["email", "Email", "email"],
+            ["first_name", "First name", "text"],
+            ["last_name", "Last name", "text"],
+            ["password", "Password", "password"],
+            ["confirmPassword", "Confirm password", "password"],
+          ].map(([name, label, type]) => (
+            <div key={name} className={name === "username" || name === "email" ? "md:col-span-2" : ""}>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                {label}
+              </label>
+              <input
+                type={type}
+                name={name}
+                value={formData[name]}
+                onChange={handleChange}
+                required={["username", "email", "password", "confirmPassword"].includes(name)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+          ))}
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+            disabled={loading}
+            className="rounded-lg bg-blue-600 px-4 py-2.5 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-300 md:col-span-2"
           >
-            Create Account
+            {loading ? "Creating account..." : "Create Account"}
           </button>
-
         </form>
 
-        <p className="text-center text-gray-600 mt-6">
-          Already have an account?{" "}
-
-          <button
-            onClick={() => navigate("/login")}
-            className="text-blue-600 font-semibold hover:underline"
-          >
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Already registered?{" "}
+          <Link to="/login" className="font-semibold text-blue-600 hover:underline">
             Login
-          </button>
+          </Link>
         </p>
-
       </div>
     </div>
   );

@@ -1,44 +1,54 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import StudentDashboard from "./pages/student/StudentDashboard";
-import ProtectedRoute from "./routes/ProtectedRoute";
-import LibrarianDashboard from "./pages/librarian/LibrarianDashboard";
 import Books from "./pages/student/Books";
 import MyBooks from "./pages/student/MyBooks";
 import Fines from "./pages/student/Fines";
+import LibrarianDashboard from "./pages/librarian/LibrarianDashboard";
 import ManageBooks from "./pages/librarian/ManageBooks";
 import AddBook from "./pages/librarian/AddBook";
 import EditBook from "./pages/librarian/EditBook";
+import CatalogData from "./pages/librarian/CatalogData";
+import ProtectedRoute from "./routes/ProtectedRoute";
+
+function HomeRedirect() {
+  const { user } = useAuth();
+  const token = localStorage.getItem("access_token");
+
+  if (!token || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <Navigate
+      to={user.role === "LIBRARIAN" ? "/librarian/dashboard" : "/student/dashboard"}
+      replace
+    />
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<HomeRedirect />} />
         <Route path="/login" element={<Login />} />
-
         <Route path="/register" element={<Register />} />
 
         <Route
           path="/student/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRole="STUDENT">
               <StudentDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/librarian/dashboard"
-          element={
-            <ProtectedRoute>
-              <LibrarianDashboard />
             </ProtectedRoute>
           }
         />
         <Route
           path="/student/books"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRole="STUDENT">
               <Books />
             </ProtectedRoute>
           }
@@ -46,7 +56,7 @@ function App() {
         <Route
           path="/student/my-books"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRole="STUDENT">
               <MyBooks />
             </ProtectedRoute>
           }
@@ -54,8 +64,17 @@ function App() {
         <Route
           path="/student/fines"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRole="STUDENT">
               <Fines />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/librarian/dashboard"
+          element={
+            <ProtectedRoute allowedRole="LIBRARIAN">
+              <LibrarianDashboard />
             </ProtectedRoute>
           }
         />
@@ -83,6 +102,16 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/librarian/catalog"
+          element={
+            <ProtectedRoute allowedRole="LIBRARIAN">
+              <CatalogData />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<HomeRedirect />} />
       </Routes>
     </BrowserRouter>
   );

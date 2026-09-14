@@ -33,6 +33,7 @@ class BookSerializer(serializers.ModelSerializer):
             "published_date",
             "total_copies",
             "available_copies",
+            "image",
             "category",
             "category_name",
             "authors",

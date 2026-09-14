@@ -1,114 +1,213 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import AppLayout from "../../components/AppLayout";
+import BookCover from "../../components/BookCover";
 import api from "../../services/api";
-
 function MyBooks() {
-  const navigate = useNavigate();
-
-  const [borrowedBooks, setBorrowedBooks] = useState([]);
+  const [borrows, setBorrows] = useState([]);
   const [books, setBooks] = useState([]);
+  const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [returningId, setReturningId] = useState(null);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [borrowResponse, booksResponse] = await Promise.all([
-          api.get("/transactions/borrows/"),
-          api.get("/books/"),
-        ]);
-
-        setBorrowedBooks(borrowResponse.data);
-        setBooks(booksResponse.data);
-      } catch (error) {
-        console.error("MY BOOKS ERROR:", error);
-
-        if (error.response) {
-          setError(JSON.stringify(error.response.data));
-        } else {
-          setError("Unable to connect to the server.");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+  const [message, setMessage] = useState("");
+  const loadData = useCallback(async () => {
+    try {
+      setError("");
+      const [borrowResponse, booksResponse] = await Promise.all([
+        api.get("/transactions/borrows/"),
+        api.get("/books/"),
+      ]);
+      setBorrows(borrowResponse.data);
+      setBooks(booksResponse.data);
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.detail || "Unable to load borrowed books.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
-
-  const getBookTitle = (bookId) => {
-    const book = books.find((book) => book.id === bookId);
-
-    return book ? book.title : `Book #${bookId}`;
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+  const bookMap = useMemo(
+    () => Object.fromEntries(books.map((book) => [book.id, book])),
+    [books],
+  );
+  const visibleBorrows = useMemo(() => {
+    if (filter === "all") {
+      return borrows;
+    }
+    if (filter === "current") {
+      return borrows.filter((borrow) =>
+        ["borrowed", "overdue"].includes(borrow.status),
+      );
+    }
+    return borrows.filter((borrow) => borrow.status === filter);
+  }, [borrows, filter]);
+  const returnBook = async (borrow) => {
+    try {
+      setReturningId(borrow.id);
+      setError("");
+      setMessage("");
+      const response = await api.post(
+        `/transactions/borrows/${borrow.id}/return/`,
+      );
+      const fineText = response.data.fine
+        ? ` Fine created: Rs. ${response.data.fine.amount}.`
+        : "";
+      const queueText = response.data.queue_notified
+        ? ` The first waiting student (${response.data.queue_notified}) was notified.`
+        : "";
+      setMessage(`Book returned successfully.${fineText}${queueText}`);
+      await loadData();
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.detail || "Unable to return this book.",
+      );
+    } finally {
+      setReturningId(null);
+    }
   };
-
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
-
-        <h1 className="text-3xl font-bold text-gray-800">
-          My Borrowed Books
-        </h1>
-
-        <p className="text-gray-600 mt-2">
-          View the books you have borrowed.
-        </p>
-
-        <button
-          onClick={() => navigate("/student/dashboard")}
-          className="mt-5 bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800"
-        >
-          Back to Dashboard
-        </button>
-
-        {loading && (
-          <p className="mt-6 text-gray-600">
-            Loading your books...
-          </p>
-        )}
-
-        {error && (
-          <p className="mt-6 text-red-600">
-            {error}
-          </p>
-        )}
-
-        {!loading && !error && borrowedBooks.length === 0 && (
-          <p className="mt-6 text-gray-600">
-            You have not borrowed any books.
-          </p>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-
-          {borrowedBooks.map((borrow) => (
-            <div
-              key={borrow.id}
-              className="bg-white rounded-xl shadow-sm p-6"
-            >
-              <h2 className="text-xl font-semibold text-gray-800">
-                {getBookTitle(borrow.book)}
-              </h2>
-
-              <p className="text-gray-600 mt-2">
-                Borrowed: {borrow.borrowed_at}
-              </p>
-
-              <p className="text-gray-600 mt-2">
-                Due Date: {borrow.due_date}
-              </p>
-
-              <p className="text-gray-600 mt-2">
-                Status: {borrow.status}
-              </p>
-            </div>
-          ))}
-
+    <AppLayout
+      title="My Books"
+      subtitle="Your complete borrowing history and return actions."
+    >
+      {" "}
+      {/* ERROR */}{" "}
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {" "}
+          {error}{" "}
         </div>
-
-      </div>
-    </div>
+      )}{" "}
+      {/* SUCCESS MESSAGE */}{" "}
+      {message && (
+        <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+          {" "}
+          {message}{" "}
+        </div>
+      )}{" "}
+      {/* FILTERS */}{" "}
+      <div className="mb-5 flex flex-wrap gap-2">
+        {" "}
+        {[
+          ["all", "All"],
+          ["current", "Current"],
+          ["overdue", "Overdue"],
+          ["returned", "Returned"],
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            onClick={() => setFilter(value)}
+            className={`rounded-lg px-3 py-2 text-sm font-semibold ${filter === value ? "bg-blue-600 text-white" : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"}`}
+          >
+            {" "}
+            {label}{" "}
+          </button>
+        ))}{" "}
+      </div>{" "}
+      {/* LOADING */}{" "}
+      {loading ? (
+        <p className="text-slate-600"> Loading borrowing history... </p>
+      ) : visibleBorrows.length === 0 ? (
+        <div className="rounded-xl bg-white p-6 text-slate-500 shadow-sm">
+          {" "}
+          No borrowing records found.{" "}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {" "}
+          {visibleBorrows.map((borrow) => {
+            const book = bookMap[borrow.book];
+            const canReturn = borrow.status !== "returned";
+            return (
+              <article
+                key={borrow.id}
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+              >
+                {" "}
+                {/* BOOK HEADER */}{" "}
+                <div className="mb-4 flex gap-4">
+                  {" "}
+                  {/* BOOK IMAGE */}{" "}
+                  <div className="h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                    {" "}
+                    {book?.image ? (
+                      <img
+                        src={
+                          book.image.startsWith("http")
+                            ? book.image
+                            : `http://127.0.0.1:8000${book.image}`
+                        }
+                        alt={book.title || `Book #${borrow.book}`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <BookCover
+                        isbn={book?.isbn}
+                        title={book?.title || `Book #${borrow.book}`}
+                        className="h-28 w-20"
+                      />
+                    )}{" "}
+                  </div>{" "}
+                  {/* BOOK INFORMATION */}{" "}
+                  <div className="min-w-0 flex-1">
+                    {" "}
+                    <div className="flex items-start justify-between gap-3">
+                      {" "}
+                      <h2 className="font-bold text-slate-900">
+                        {" "}
+                        {book?.title || `Book #${borrow.book}`}{" "}
+                      </h2>{" "}
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize text-slate-700">
+                        {" "}
+                        {borrow.status}{" "}
+                      </span>{" "}
+                    </div>{" "}
+                    <p className="mt-2 text-xs text-slate-500">
+                      {" "}
+                      ISBN: {book?.isbn || "—"}{" "}
+                    </p>{" "}
+                  </div>{" "}
+                </div>{" "}
+                {/* BORROW INFORMATION */}{" "}
+                <div className="space-y-2 text-sm text-slate-600">
+                  {" "}
+                  <p>
+                    {" "}
+                    Borrowed:{" "}
+                    {new Date(borrow.borrowed_at).toLocaleDateString()}{" "}
+                  </p>{" "}
+                  <p> Due date: {borrow.due_date} </p>{" "}
+                  {borrow.returned_at && (
+                    <p>
+                      {" "}
+                      Returned:{" "}
+                      {new Date(borrow.returned_at).toLocaleDateString()}{" "}
+                    </p>
+                  )}{" "}
+                </div>{" "}
+                {/* RETURN BUTTON */}{" "}
+                {canReturn && (
+                  <button
+                    onClick={() => returnBook(borrow)}
+                    disabled={returningId === borrow.id}
+                    className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-blue-300"
+                  >
+                    {" "}
+                    {returningId === borrow.id
+                      ? "Returning..."
+                      : "Return Book"}{" "}
+                  </button>
+                )}{" "}
+              </article>
+            );
+          })}{" "}
+        </div>
+      )}{" "}
+    </AppLayout>
   );
 }
-
 export default MyBooks;

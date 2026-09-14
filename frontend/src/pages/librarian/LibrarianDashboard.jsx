@@ -1,245 +1,206 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AppLayout from "../../components/AppLayout";
 import api from "../../services/api";
 
+function StatCard({ label, value, emphasis = false, note }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-sm font-medium text-slate-500">{label}</p>
+
+      <p
+        className={`mt-2 text-3xl font-bold ${
+          emphasis ? "text-red-600" : "text-slate-900"
+        }`}
+      >
+        {value}
+      </p>
+
+      {note && <p className="mt-1 text-xs text-slate-500">{note}</p>}
+    </div>
+  );
+}
+
 function LibrarianDashboard() {
-  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        const response = await api.get(
-          "/transactions/librarian-dashboard/"
-        );
+  const loadDashboard = useCallback(async () => {
+    try {
+      setError("");
 
-        setDashboard(response.data);
-      } catch (error) {
-        console.error("LIBRARIAN DASHBOARD ERROR:", error);
+      const response = await api.get("/transactions/librarian-dashboard/");
 
-        if (error.response) {
-          setError(
-            error.response.data.detail ||
-            "Unable to load dashboard."
-          );
-        } else {
-          setError("Unable to connect to the server.");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboard();
+      setDashboard(response.data);
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.detail || "Unable to load dashboard.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+  useEffect(() => {
+    loadDashboard();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <p className="text-gray-600">
-          Loading dashboard...
-        </p>
-      </div>
-    );
-  }
+    const refreshTimer = window.setInterval(loadDashboard, 15000);
+
+    return () => window.clearInterval(refreshTimer);
+  }, [loadDashboard]);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
-
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">
-              Librarian Dashboard
-            </h1>
-
-            <p className="text-gray-600 mt-2">
-              Welcome to Smart Library.
-            </p>
-          </div>
+    <AppLayout
+      title="Librarian Dashboard"
+      subtitle="Library activity summary from the current backend services."
+      actions={
+        <>
+          <button
+            onClick={() => navigate("/librarian/books")}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Manage Books
+          </button>
 
           <button
-            onClick={handleLogout}
-            className="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700"
+            onClick={() => navigate("/librarian/catalog")}
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
-            Logout
+            Catalog Data
           </button>
+        </>
+      }
+    >
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
         </div>
+      )}
 
-        {error && (
-          <p className="mt-6 text-red-600">
-            {error}
-          </p>
-        )}
+      {loading ? (
+        <p className="text-slate-600">Loading dashboard...</p>
+      ) : dashboard ? (
+        <>
+          {/* Statistics */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Total Books" value={dashboard.total_books} />
 
-        {dashboard && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+            <StatCard label="Total Students" value={dashboard.total_students} />
 
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <p className="text-gray-500">
-                  Total Books
-                </p>
+            <StatCard
+              label="Currently Borrowed"
+              value={dashboard.currently_borrowed}
+            />
 
-                <h2 className="text-3xl font-bold text-gray-800 mt-2">
-                  {dashboard.total_books}
-                </h2>
-              </div>
+            <StatCard
+              label="Overdue Books"
+              value={dashboard.overdue_books}
+              emphasis
+            />
 
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <p className="text-gray-500">
-                  Total Students
-                </p>
+            <StatCard label="Waiting Queue" value={dashboard.waiting_queue} />
 
-                <h2 className="text-3xl font-bold text-gray-800 mt-2">
-                  {dashboard.total_students}
-                </h2>
-              </div>
+            <StatCard
+              label="Unpaid Fines"
+              value={dashboard.unpaid_fines}
+              note={`Rs. ${dashboard.total_unpaid_fine_amount} total`}
+            />
+          </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <p className="text-gray-500">
-                  Currently Borrowed
-                </p>
-
-                <h2 className="text-3xl font-bold text-gray-800 mt-2">
-                  {dashboard.currently_borrowed}
-                </h2>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <p className="text-gray-500">
-                  Overdue Books
-                </p>
-
-                <h2 className="text-3xl font-bold text-red-600 mt-2">
-                  {dashboard.overdue_books}
-                </h2>
-              </div>
-
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <p className="text-gray-500">
-                  Students Waiting in Queue
-                </p>
-
-                <h2 className="text-3xl font-bold text-gray-800 mt-2">
-                  {dashboard.waiting_queue}
-                </h2>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <p className="text-gray-500">
-                  Unpaid Fines
-                </p>
-
-                <h2 className="text-3xl font-bold text-gray-800 mt-2">
-                  {dashboard.unpaid_fines}
-                </h2>
-
-                <p className="text-gray-600 mt-2">
-                  Total: Rs.{" "}
-                  {dashboard.total_unpaid_fine_amount}
-                </p>
-              </div>
-
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
-
-              <h2 className="text-xl font-semibold text-gray-800">
+          {/* Recent Borrowing Records */}
+          <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">
                 Recent Borrowing Records
               </h2>
 
-              {dashboard.recent_borrows.length === 0 ? (
-                <p className="text-gray-600 mt-4">
-                  No borrowing records found.
-                </p>
-              ) : (
-                <div className="overflow-x-auto mt-4">
-
-                  <table className="w-full text-left">
-
-                    <thead>
-                      <tr className="border-b">
-                        <th className="py-3 px-2">
-                          Student
-                        </th>
-
-                        <th className="py-3 px-2">
-                          Book
-                        </th>
-
-                        <th className="py-3 px-2">
-                          Borrowed
-                        </th>
-
-                        <th className="py-3 px-2">
-                          Due Date
-                        </th>
-
-                        <th className="py-3 px-2">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {dashboard.recent_borrows.map(
-                        (borrow) => (
-                          <tr
-                            key={borrow.borrow_id}
-                            className="border-b"
-                          >
-                            <td className="py-3 px-2">
-                              {borrow.student}
-                            </td>
-
-                            <td className="py-3 px-2">
-                              {borrow.book_title}
-                            </td>
-
-                            <td className="py-3 px-2">
-                              {new Date(
-                                borrow.borrowed_at
-                              ).toLocaleDateString()}
-                            </td>
-
-                            <td className="py-3 px-2">
-                              {borrow.due_date}
-                            </td>
-
-                            <td className="py-3 px-2">
-                              {borrow.status}
-                            </td>
-                          </tr>
-                        )
-                      )}
-                    </tbody>
-
-                  </table>
-
-                </div>
-              )}
-
+              <p className="mt-1 text-sm text-slate-500">
+                View the latest borrowing activity and current status of each
+                book.
+              </p>
             </div>
-          </>
-        )}
 
-      </div>
-    </div>
+            {dashboard.recent_borrows.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No borrowing records found.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b bg-slate-50 text-slate-600">
+                      <th className="px-3 py-3">Borrow ID</th>
+
+                      <th className="px-3 py-3">Student</th>
+
+                      <th className="px-3 py-3">Book</th>
+
+                      <th className="px-3 py-3">Borrowed</th>
+
+                      <th className="px-3 py-3">Due Date</th>
+
+                      <th className="px-3 py-3">Status</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {dashboard.recent_borrows.map((borrow) => (
+                      <tr
+                        key={borrow.borrow_id}
+                        className="border-b last:border-0"
+                      >
+                        {/* Borrow ID */}
+                        <td className="px-3 py-3 text-slate-600">
+                          #{borrow.borrow_id}
+                        </td>
+
+                        {/* Student */}
+                        <td className="px-3 py-3 font-medium text-slate-800">
+                          {borrow.student}
+                        </td>
+
+                        {/* Book */}
+                        <td className="px-3 py-3 text-slate-700">
+                          {borrow.book_title}
+                        </td>
+
+                        {/* Borrowed Date */}
+                        <td className="px-3 py-3 text-slate-600">
+                          {new Date(borrow.borrowed_at).toLocaleDateString()}
+                        </td>
+
+                        {/* Due Date */}
+                        <td className="px-3 py-3 text-slate-600">
+                          {borrow.due_date}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-3 py-3">
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
+                              borrow.status === "returned"
+                                ? "bg-green-100 text-green-700"
+                                : borrow.status === "overdue"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {borrow.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
+      ) : null}
+    </AppLayout>
   );
 }
 
