@@ -23,7 +23,11 @@ function HomeRedirect() {
 
   return (
     <Navigate
-      to={user.role === "LIBRARIAN" ? "/librarian/dashboard" : "/student/dashboard"}
+      to={
+        user.role === "LIBRARIAN"
+          ? "/librarian/dashboard"
+          : "/student/dashboard"
+      }
       replace
     />
   );

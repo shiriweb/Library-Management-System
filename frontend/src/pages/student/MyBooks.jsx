@@ -75,21 +75,18 @@ function MyBooks() {
       subtitle="Your complete borrowing history and return actions."
     >
       {" "}
-      {/* ERROR */}{" "}
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {" "}
           {error}{" "}
         </div>
       )}{" "}
-      {/* SUCCESS MESSAGE */}{" "}
       {message && (
         <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
           {" "}
           {message}{" "}
         </div>
       )}{" "}
-      {/* FILTERS */}{" "}
       <div className="mb-5 flex flex-wrap gap-2">
         {" "}
         {[
@@ -108,7 +105,6 @@ function MyBooks() {
           </button>
         ))}{" "}
       </div>{" "}
-      {/* LOADING */}{" "}
       {loading ? (
         <p className="text-slate-600"> Loading borrowing history... </p>
       ) : visibleBorrows.length === 0 ? (
@@ -128,10 +124,8 @@ function MyBooks() {
                 className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
               >
                 {" "}
-                {/* BOOK HEADER */}{" "}
                 <div className="mb-4 flex gap-4">
                   {" "}
-                  {/* BOOK IMAGE */}{" "}
                   <div className="h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100">
                     {" "}
                     {book?.image ? (
@@ -152,7 +146,6 @@ function MyBooks() {
                       />
                     )}{" "}
                   </div>{" "}
-                  {/* BOOK INFORMATION */}{" "}
                   <div className="min-w-0 flex-1">
                     {" "}
                     <div className="flex items-start justify-between gap-3">
@@ -172,7 +165,6 @@ function MyBooks() {
                     </p>{" "}
                   </div>{" "}
                 </div>{" "}
-                {/* BORROW INFORMATION */}{" "}
                 <div className="space-y-2 text-sm text-slate-600">
                   {" "}
                   <p>
@@ -189,7 +181,6 @@ function MyBooks() {
                     </p>
                   )}{" "}
                 </div>{" "}
-                {/* RETURN BUTTON */}{" "}
                 {canReturn && (
                   <button
                     onClick={() => returnBook(borrow)}

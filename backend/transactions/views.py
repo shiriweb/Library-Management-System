@@ -1,22 +1,17 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from books.models import Book
 from accounts.models import User
-
 from accounts.permissions import (
     IsLibrarian,
     IsStudent,
     IsStudentOrLibrarian
 )
-
 from .models import Borrow, BookQueue, Fine
-
 from .serializers import (
     BookQueueSerializer,
     BorrowSerializer,
@@ -34,7 +29,6 @@ class BorrowListCreateView(generics.ListCreateAPIView):
             user=self.request.user
         )
 
-        # Update borrowed books that have passed their due date.
         for borrow in borrows:
             if borrow.status == 'borrowed':
                 if borrow.due_date < timezone.now().date():
@@ -64,8 +58,6 @@ class BorrowReturnView(APIView):
             pk=pk
         )
 
-        # Students can only return their own books.
-        # Librarians can return any user's book.
         if (
             request.user.role == "STUDENT"
             and borrow.user != request.user
@@ -77,7 +69,6 @@ class BorrowReturnView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Check if the book has already been returned.
         if borrow.status == "returned":
             return Response(
                 {
@@ -86,22 +77,18 @@ class BorrowReturnView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Check whether the book is overdue.
         is_overdue = borrow.due_date < timezone.now().date()
 
         fine = None
 
-        # If the book is overdue, automatically create a fine.
         if is_overdue:
 
             overdue_days = (
                 timezone.now().date() - borrow.due_date
             ).days
 
-            # Fine is Rs. 5 per overdue day.
             amount = overdue_days * 5
 
-            # Create fine only if one does not already exist.
             fine, created = Fine.objects.get_or_create(
                 borrow=borrow,
                 defaults={
@@ -109,23 +96,18 @@ class BorrowReturnView(APIView):
                 }
             )
 
-        # Mark the borrow as returned.
         borrow.status = "returned"
         borrow.returned_at = timezone.now()
         borrow.save()
 
-        # Increase available copies.
         book = borrow.book
         book.available_copies += 1
         book.save()
-
-        # Find the first person in the waiting queue.
         queue_entry = BookQueue.objects.filter(
             book=book,
             status="waiting"
         ).order_by("joined_at").first()
 
-        # Notify the first person in the queue.
         if queue_entry:
             queue_entry.status = "notified"
             queue_entry.save()
@@ -165,24 +147,18 @@ class BookQueueDeleteView(generics.DestroyAPIView):
 
 class FineListView(APIView):
     permission_classes = [IsAuthenticated]
-
     def get(self, request):
         fines = Fine.objects.filter(borrow__user=request.user)
-
         serializer = FineSerializer(fines, many=True)
-
         return Response(serializer.data)
 
 class FinePaymentView(APIView):
     permission_classes = [IsAuthenticated]
-
     def post(self, request, pk):
         fine = get_object_or_404(
             Fine,
             pk=pk
         )
-
-        # Check if the fine belongs to the logged-in user.
         if fine.borrow.user != request.user:
             return Response(
                 {
@@ -191,7 +167,6 @@ class FinePaymentView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Check if the fine is already paid.
         if fine.is_paid:
             return Response(
                 {
@@ -200,7 +175,6 @@ class FinePaymentView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Mark the fine as paid.
         fine.is_paid = True
         fine.save()
 
@@ -225,47 +199,39 @@ class StudentDashboardView(APIView):
             user=user
         )
 
-        # Update borrowed books that have passed their due date.
         for borrow in borrows:
             if borrow.status == 'borrowed':
                 if borrow.due_date < timezone.now().date():
                     borrow.status = 'overdue'
                     borrow.save()
 
-        # Books that are currently borrowed.
         current_borrows = borrows.filter(
             status='borrowed'
         )
 
-        # Books that are overdue based on the actual due date.
         overdue_borrows = borrows.filter(
             status__in=['borrowed', 'overdue'],
             due_date__lt=timezone.now().date()
         )
 
-        # Number of books currently waiting in queue.
         queue_count = BookQueue.objects.filter(
             user=user,
             status='waiting'
         ).count()
 
-        # Get all queue entries for this student.
         queue_entries = BookQueue.objects.filter(
             user=user
         ).order_by('joined_at')
 
-        # Get unpaid fines.
         unpaid_fines = Fine.objects.filter(
             borrow__user=user,
             is_paid=False
         )
 
-        # Calculate total unpaid fine amount.
         total_unpaid_fine = sum(
             fine.amount for fine in unpaid_fines
         )
 
-        # Get all fine details.
         fine_details = [
             {
                 "fine_id": fine.id,
@@ -325,41 +291,30 @@ class StudentDashboardView(APIView):
 
 class LibrarianDashboardView(APIView):
     permission_classes = [IsLibrarian]
-
     def get(self, request):
-
-        # Total number of books.
         total_books = Book.objects.count()
 
-        # Total number of registered students.
         total_students = User.objects.filter(
             role="STUDENT"
         ).count()
 
-        # Currently borrowed books.
-        # Both borrowed and overdue books are still
-        # physically with students.
         currently_borrowed = Borrow.objects.filter(
             status__in=["borrowed", "overdue"]
         ).count()
 
-        # Books that are overdue based on the actual due date.
         overdue_books = Borrow.objects.filter(
             status__in=["borrowed", "overdue"],
             due_date__lt=timezone.now().date()
         ).count()
 
-        # Students currently waiting in queue.
         waiting_queue = BookQueue.objects.filter(
             status="waiting"
         ).count()
 
-        # Number of unpaid fines.
         unpaid_fines = Fine.objects.filter(
             is_paid=False
         ).count()
 
-        # Total amount of unpaid fines.
         total_unpaid_fine_amount = sum(
             fine.amount
             for fine in Fine.objects.filter(
@@ -367,7 +322,6 @@ class LibrarianDashboardView(APIView):
             )
         )
 
-        # Get the 5 most recent borrowing records.
         recent_borrows = Borrow.objects.select_related(
             'user',
             'book'

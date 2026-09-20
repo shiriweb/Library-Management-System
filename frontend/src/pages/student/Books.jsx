@@ -3,19 +3,9 @@ import AppLayout from "../../components/AppLayout";
 import BookCover from "../../components/BookCover";
 import api from "../../services/api";
 
-function getLocalDateString() {
-  const now = new Date();
-  const local = new Date(
-    now.getTime() - now.getTimezoneOffset() * 60_000
-  );
-
-  return local.toISOString().split("T")[0];
-}
-
 function Books() {
   const [books, setBooks] = useState([]);
   const [queue, setQueue] = useState([]);
-  const [dueDates, setDueDates] = useState({});
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
@@ -79,20 +69,12 @@ function Books() {
   };
 
   const borrowBook = async (book) => {
-    const dueDate = dueDates[book.id];
-
-    if (!dueDate) {
-      setError(`Please select a due date for ${book.title}.`);
-      return;
-    }
-
     try {
       setBusyId(book.id);
       setError("");
       setMessage("");
 
-      // Recheck the backend immediately before borrowing
-      // so the UI cannot act on stale stock.
+
       const freshBook = await getFreshBook(book.id);
 
       if (Number(freshBook.available_copies) <= 0) {
@@ -104,20 +86,18 @@ function Books() {
 
       const queueEntry = activeQueueByBook[book.id];
 
+    
       await api.post("/transactions/borrows/", {
         book: book.id,
-        due_date: dueDate,
       });
 
-      // If stock was manually increased while this student's
-      // entry was still "waiting", remove that stale queue entry.
+
       if (queueEntry?.status === "waiting") {
         try {
           await api.delete(
             `/transactions/queue/${queueEntry.id}/`
           );
         } catch {
-          // Borrowing already succeeded.
         }
       }
 
@@ -147,7 +127,6 @@ function Books() {
       setError("");
       setMessage("");
 
-      // Queue is valid only when the CURRENT backend stock is zero.
       const freshBook = await getFreshBook(book.id);
 
       if (Number(freshBook.available_copies) > 0) {
@@ -366,47 +345,22 @@ function Books() {
                   )}
 
                   {isAvailable ? (
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-slate-700">
-                        Due date
-                      </label>
-
-                      <div className="flex gap-2">
-                        <input
-                          type="date"
-                          min={getLocalDateString()}
-                          value={dueDates[book.id] || ""}
-                          onChange={(event) =>
-                            setDueDates((current) => ({
-                              ...current,
-                              [book.id]: event.target.value,
-                            }))
-                          }
-                          className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                        />
-
-                        <button
-                          onClick={() =>
-                            borrowBook(book)
-                          }
-                          disabled={busyId === book.id}
-                          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-blue-300"
-                        >
-                          {busyId === book.id
-                            ? "Checking..."
-                            : "Borrow"}
-                        </button>
-                      </div>
-                    </div>
+                    <button
+                      onClick={() => borrowBook(book)}
+                      disabled={busyId === book.id}
+                      className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-blue-300"
+                    >
+                      {busyId === book.id
+                        ? "Checking..."
+                        : "Borrow"}
+                    </button>
                   ) : queueEntry ? (
                     <p className="text-sm text-slate-500">
                       You already have an active queue entry.
                     </p>
                   ) : (
                     <button
-                      onClick={() =>
-                        joinQueue(book)
-                      }
+                      onClick={() => joinQueue(book)}
                       disabled={busyId === book.id}
                       className="w-full rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:bg-amber-300"
                     >

@@ -31,7 +31,6 @@ function AppLayout({ title, subtitle, actions, children }) {
       <header className="border-b bg-white shadow-sm">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
 
-          {/* Logo and Portal Name */}
           <div className="flex items-center gap-3">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600 text-2xl font-extrabold tracking-wide text-white shadow-sm">
               SL
@@ -50,7 +49,6 @@ function AppLayout({ title, subtitle, actions, children }) {
             </div>
           </div>
 
-          {/* Navigation */}
           <nav className="flex flex-wrap gap-2">
             {links.map(([label, href]) => (
               <NavLink
@@ -69,7 +67,6 @@ function AppLayout({ title, subtitle, actions, children }) {
             ))}
           </nav>
 
-          {/* User Information and Logout */}
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-sm font-semibold text-slate-800">
@@ -91,7 +88,6 @@ function AppLayout({ title, subtitle, actions, children }) {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-7 md:px-6">
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           

@@ -86,14 +86,12 @@ function StudentDashboard() {
       title="Student Dashboard"
       subtitle="View your borrowed books, queue status, overdue books and fines."
     >
-      {/* Error Message */}
       {error && (
         <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <p className="font-medium">{error}</p>
         </div>
       )}
 
-      {/* Book Available Notification */}
       {notifiedQueue.length > 0 && (
         <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-4">
           <div className="flex items-start gap-3">
@@ -122,7 +120,6 @@ function StudentDashboard() {
         </div>
       )}
 
-      {/* Loading */}
       {loading ? (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <p className="text-sm text-slate-600">
@@ -131,7 +128,6 @@ function StudentDashboard() {
         </div>
       ) : dashboard ? (
         <>
-          {/* Statistics */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               label="Total Borrowed"
@@ -158,10 +154,8 @@ function StudentDashboard() {
             />
           </div>
 
-          {/* Current Books and Queue */}
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
 
-            {/* Current Books */}
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
@@ -216,7 +210,6 @@ function StudentDashboard() {
               )}
             </section>
 
-            {/* My Queue */}
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
@@ -291,7 +284,6 @@ function StudentDashboard() {
             </section>
           </div>
 
-          {/* Overdue Books */}
           {dashboard.overdue_borrows.length > 0 && (
             <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
               <div className="flex items-start gap-3">

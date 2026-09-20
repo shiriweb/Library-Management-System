@@ -167,7 +167,6 @@ function BookForm({ initialData = emptyBook, submitLabel, onSubmit, onCancel }) 
 
       <div className="grid gap-5 md:grid-cols-2">
 
-        {/* Title */}
         <div className="md:col-span-2">
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Title
@@ -182,7 +181,6 @@ function BookForm({ initialData = emptyBook, submitLabel, onSubmit, onCancel }) 
           />
         </div>
 
-        {/* ISBN */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
             ISBN
@@ -200,7 +198,6 @@ function BookForm({ initialData = emptyBook, submitLabel, onSubmit, onCancel }) 
           </div>
         </div>
 
-        {/* Published Date */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Published Date
@@ -215,7 +212,6 @@ function BookForm({ initialData = emptyBook, submitLabel, onSubmit, onCancel }) 
           />
         </div>
 
-        {/* Total Copies */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Total Copies
@@ -232,7 +228,6 @@ function BookForm({ initialData = emptyBook, submitLabel, onSubmit, onCancel }) 
           />
         </div>
 
-        {/* Available Copies */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Available Copies
@@ -249,7 +244,6 @@ function BookForm({ initialData = emptyBook, submitLabel, onSubmit, onCancel }) 
           />
         </div>
 
-        {/* Category */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Category
@@ -272,7 +266,6 @@ function BookForm({ initialData = emptyBook, submitLabel, onSubmit, onCancel }) 
           </select>
         </div>
 
-        {/* Publisher */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Publisher
@@ -294,7 +287,6 @@ function BookForm({ initialData = emptyBook, submitLabel, onSubmit, onCancel }) 
           </select>
         </div>
 
-        {/* Authors */}
         <div className="md:col-span-2">
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Authors
@@ -314,7 +306,6 @@ function BookForm({ initialData = emptyBook, submitLabel, onSubmit, onCancel }) 
           </select>
         </div>
 
-        {/* Book Image */}
         <div className="md:col-span-2">
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Book Image
@@ -351,7 +342,6 @@ function BookForm({ initialData = emptyBook, submitLabel, onSubmit, onCancel }) 
           </div>
         </div>
 
-        {/* Description */}
         <div className="md:col-span-2">
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
             Description
@@ -367,7 +357,6 @@ function BookForm({ initialData = emptyBook, submitLabel, onSubmit, onCancel }) 
         </div>
       </div>
 
-      {/* Buttons */}
       <div className="mt-6 flex gap-3">
         <button
           type="submit"
