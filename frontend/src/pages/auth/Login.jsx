@@ -101,7 +101,7 @@ function Login() {
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">
-          New student?{" "}
+          Don't Have An Account?{" "}
           <Link to="/register" className="font-semibold text-blue-600 hover:underline">
             Create an account
           </Link>

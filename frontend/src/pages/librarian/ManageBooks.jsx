@@ -65,7 +65,6 @@ function ManageBooks() {
   return (
     <AppLayout
       title="Manage Books"
-      subtitle="Manage your library books, images, and stock."
       actions={
         <button
           onClick={() => navigate("/librarian/books/add")}
@@ -75,27 +74,14 @@ function ManageBooks() {
         </button>
       }
     >
-      {/* Information */}
-      <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-        <p className="font-semibold">
-          Book availability and queue management
-        </p>
 
-        <p className="mt-1">
-          Use the Return action on the librarian Dashboard when a
-          borrowed book is returned. Use Edit / Stock for catalog
-          corrections or adding physical copies.
-        </p>
-      </div>
 
-      {/* Error */}
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
-      {/* Loading */}
       {loading ? (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
           <p className="text-slate-600">
@@ -153,7 +139,6 @@ function ManageBooks() {
                     key={book.id}
                     className="border-t border-slate-100"
                   >
-                    {/* BOOK IMAGE */}
                     <td className="px-5 py-4">
                       <div className="flex h-24 w-16 items-center justify-center overflow-hidden rounded-lg bg-slate-100">
                         {book.image ? (
@@ -179,29 +164,24 @@ function ManageBooks() {
                       </div>
                     </td>
 
-                    {/* TITLE */}
                     <td className="px-5 py-4">
                       <div className="font-semibold text-slate-800">
                         {book.title}
                       </div>
                     </td>
 
-                    {/* ISBN */}
                     <td className="px-5 py-4 text-slate-600">
                       {book.isbn}
                     </td>
 
-                    {/* CATEGORY */}
                     <td className="px-5 py-4 text-slate-600">
                       {book.category_name || "—"}
                     </td>
 
-                    {/* TOTAL COPIES */}
                     <td className="px-5 py-4 text-slate-600">
                       {book.total_copies}
                     </td>
 
-                    {/* AVAILABLE */}
                     <td className="px-5 py-4">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -214,7 +194,6 @@ function ManageBooks() {
                       </span>
                     </td>
 
-                    {/* ACTIONS */}
                     <td className="px-5 py-4">
                       <div className="flex gap-2">
                         <button

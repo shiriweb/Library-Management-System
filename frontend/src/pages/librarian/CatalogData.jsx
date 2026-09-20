@@ -211,7 +211,6 @@ function CatalogData() {
   return (
     <AppLayout
       title="Catalog Data"
-      subtitle="Manage the category, author and publisher services already provided by the backend."
     >
       <div className="grid gap-6 xl:grid-cols-3">
         {Object.entries(resources).map(([resourceKey, config]) => (
