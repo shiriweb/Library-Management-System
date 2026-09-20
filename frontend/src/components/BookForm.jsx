@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
-import BookCover from "./BookCover";
+
 
 const emptyBook = {
   title: "",

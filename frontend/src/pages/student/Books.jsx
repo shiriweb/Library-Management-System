@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLayout from "../../components/AppLayout";
-import BookCover from "../../components/BookCover";
 import api from "../../services/api";
 
 function Books() {
@@ -197,7 +196,6 @@ function Books() {
   return (
     <AppLayout
       title="Browse Books"
-      subtitle="Borrow while copies are available. Queue is offered only after available copies reach zero."
     >
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">

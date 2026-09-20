@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "../../components/AppLayout";
-import BookCover from "../../components/BookCover";
 import api from "../../services/api";
 
 function ManageBooks() {

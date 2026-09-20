@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLayout from "../../components/AppLayout";
-import BookCover from "../../components/BookCover";
 import api from "../../services/api";
 function MyBooks() {
   const [borrows, setBorrows] = useState([]);
@@ -72,7 +71,6 @@ function MyBooks() {
   return (
     <AppLayout
       title="My Books"
-      subtitle="Your complete borrowing history and return actions."
     >
       {" "}
       {error && (

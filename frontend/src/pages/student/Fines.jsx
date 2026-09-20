@@ -63,9 +63,7 @@ function Fines() {
 
   return (
     <AppLayout title="My Fines" subtitle={`Current unpaid total: Rs. ${totalUnpaid.toFixed(3)}`}>
-      <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
-        The current backend records payment by marking the fine as paid; it does not process an online payment gateway.
-      </div>
+    
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">

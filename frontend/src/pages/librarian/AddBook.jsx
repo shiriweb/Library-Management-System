@@ -12,7 +12,7 @@ function AddBook() {
   };
 
   return (
-    <AppLayout title="Add Book" subtitle="Create a book using the current librarian book API.">
+    <AppLayout title="Add Book">
       <BookForm
         submitLabel="Add Book"
         onSubmit={createBook}
